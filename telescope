@@ -1,0 +1,60 @@
+-- Services
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
+
+-- Variables
+local player = Players.LocalPlayer
+local scriptEnabled = false
+local zoomFactor = 10 -- Zoom factor for the camera
+local originalFOV = Camera.FieldOfView -- Store the original Field of View (FOV)
+local originalCFrame = Camera.CFrame -- Store the original Camera CFrame
+
+-- Function to toggle the script
+local function toggleScript()
+    scriptEnabled = not scriptEnabled
+    print("Script Enabled:", scriptEnabled)
+    if not scriptEnabled then
+        -- Reset to the original FOV and Camera CFrame when disabled
+        Camera.FieldOfView = originalFOV
+        Camera.CFrame = originalCFrame
+    end
+end
+
+-- Function to handle input
+local function onInputBegan(input, gameProcessed)
+    if gameProcessed then return end -- Ignore input if it's already processed by Roblox
+
+    -- Toggle script when "P" is pressed
+    if input.KeyCode == Enum.KeyCode.P then
+        toggleScript()
+    end
+
+    -- Zoom in when holding right-click if the script is enabled
+    if scriptEnabled and input.UserInputType == Enum.UserInputType.MouseButton2 then
+        -- Calculate the zoom direction based on the mouse position
+        local mouse = player:GetMouse()
+        local mousePosition = Vector2.new(mouse.X, mouse.Y)
+        local viewportRay = Camera:ViewportPointToRay(mousePosition.X, mousePosition.Y)
+        local zoomTarget = viewportRay.Origin + viewportRay.Direction * zoomFactor
+
+        -- Update the camera's Field of View and position
+        Camera.FieldOfView = originalFOV / zoomFactor
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, zoomTarget)
+    end
+end
+
+-- Function to reset zoom when right-click is released
+local function onInputEnded(input, gameProcessed)
+    if gameProcessed then return end
+
+    if scriptEnabled and input.UserInputType == Enum.UserInputType.MouseButton2 then
+        -- Reset FOV and CFrame
+        Camera.FieldOfView = originalFOV
+        Camera.CFrame = originalCFrame
+    end
+end
+
+-- Connect the functions to the UserInputService events
+UserInputService.InputBegan:Connect(onInputBegan)
+UserInputService.InputEnded:Connect(onInputEnded)
